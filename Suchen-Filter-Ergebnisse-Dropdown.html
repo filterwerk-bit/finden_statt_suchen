@@ -330,6 +330,10 @@
                  background:var(--card); color:inherit; font:inherit; font-size:14px}
   .eingabe input:focus{outline:none; border-color:var(--violett)}
   .eingabe button{border-radius:11px; padding:0 14px; font-weight:700; font-size:13.5px; cursor:pointer}
+  /* Datenschutz-Hinweis unter der Bot-Eingabe: so breit wie Eingabefeld + go + reset, darf umbrechen */
+  .botfenster .eingabe{padding-bottom:6px}
+  .datenhinweis{margin:0; padding:0 18px calc(12px + env(safe-area-inset-bottom,0px)); font-size:11px; line-height:1.4;
+    color:var(--muted); flex-shrink:0}
   #senden{background:transparent; border:2px solid var(--violett); color:var(--violett)}
   #senden:hover{background:var(--violett-hell)}
   #senden:disabled{opacity:.5; cursor:default}
@@ -679,7 +683,7 @@
       </div>
 
     </div>
-    <p class="ki-hinweis">Diese Übersicht wurde mit Unterstützung von KI erstellt. Zuordnungen und Kurzbeschreibungen können Fehler enthalten – massgeblich sind die Originalbeiträge auf <a href="https://dlh.zh.ch/" target="_blank" rel="noopener">dlh.zh.ch</a>.</p>
+    <p class="ki-hinweis">Diese Übersicht wurde mit Unterstützung von KI erstellt. Zuordnungen und Kurzbeschreibungen können Fehler enthalten – massgeblich sind die Originalbeiträge auf <a href="https://dlh.zh.ch/" target="_blank" rel="noopener">dlh.zh.ch</a>. Bei Verwendung des Chatbots keine Personendaten eingeben. Die Anfragen werden von einem externen KI-Dienst verarbeitet.</p>
   </header>
 
   <!-- ===== «Wo fange ich an?» – ruhige Ansicht mit Situationen (LateMajority, 3.10.2026) ===== -->
@@ -787,6 +791,7 @@
       <button type="submit" id="senden">go</button>
       <button id="botreset" type="button" title="Gespräch löschen und neu beginnen">reset</button>
     </form>
+    <p class="datenhinweis" id="datenhinweis">Bitte keine Personendaten eingeben. Die Anfragen werden von einem externen KI-Dienst verarbeitet.</p>
   </aside>
 
 <script>
@@ -1313,7 +1318,7 @@ function fundstellenAus(el){
   el.querySelectorAll('a[href]').forEach(a => {
     const href = a.getAttribute("href");
     if (nachUrl.has(href)) gefunden.set(href, nachUrl.get(href));
-    a.target = "_blank"; a.rel = "noopener";
+    a.target = "_blank"; a.rel = "noopener noreferrer";
   });
   if (!gefunden.size) return null;
   const box = document.createElement("div");
@@ -1349,10 +1354,76 @@ function botZuruecksetzen(){
   $("#frage").focus();
 }
 
+/* ---------- Bot-Antworten bereinigen (Vorschlag Hans, 26.10.2026) ----------
+   Die Antwort des Bots kommt als HTML vom externen Server. Bevor sie in die
+   Seite kommt, bleiben nur Textstruktur, Links (http, https, mailto) und die
+   Vorschlags-Knöpfe übrig; Script, iframe, Bilder, Event-Handler und
+   javascript:-Links fliegen raus. Ohne Bibliothek. */
+const BOT_ALLOWED_TAGS = new Set([
+  "SECTION", "ARTICLE", "DIV", "P", "SPAN", "B", "STRONG", "I", "EM", "SMALL",
+  "BR", "HR", "UL", "OL", "LI", "DL", "DT", "DD",
+  "H1", "H2", "H3", "H4", "H5", "A", "BUTTON", "TIME", "BLOCKQUOTE"
+]);
+// Diese Elemente fliegen samt Inhalt raus.
+const BOT_DROP_TAGS = new Set([
+  "SCRIPT", "STYLE", "IFRAME", "FRAME", "FRAMESET", "OBJECT", "EMBED",
+  "TEMPLATE", "NOSCRIPT", "SVG", "MATH", "FORM", "INPUT", "TEXTAREA",
+  "SELECT", "LINK", "META", "BASE", "IMG", "VIDEO", "AUDIO", "SOURCE"
+]);
+// Einziges erlaubtes onclick: die Vorschlags-Knöpfe des Backends.
+const SUGGEST_ONCLICK_RE = /^\s*sendSuggestedQuestion\(\s*(['"])([\s\S]*)\1\s*\)\s*;?\s*$/;
+
+function sanitizeBotHtml(html) {
+  const tpl = document.createElement("template"); // inert: nichts wird geladen oder ausgeführt
+  tpl.innerHTML = String(html ?? "");
+  const walk = (parent) => {
+    for (const el of Array.from(parent.children)) {
+      const tag = el.tagName.toUpperCase();
+      if (BOT_DROP_TAGS.has(tag)) { el.remove(); continue; }
+      if (!BOT_ALLOWED_TAGS.has(tag)) {
+        // Unbekanntes Element: Inhalt behalten, Hülle weg.
+        walk(el);
+        el.replaceWith(...Array.from(el.childNodes));
+        continue;
+      }
+      for (const attr of Array.from(el.attributes)) {
+        const name = attr.name.toLowerCase();
+        const val = attr.value || "";
+        if (name === "class" || name === "title" || name === "datetime") continue;
+        if (name === "style" && !/url\s*\(|expression|@import|javascript:/i.test(val)) continue;
+        if (name === "href" && tag === "A" && /^(https?:|mailto:)/i.test(val.trim())) continue;
+        if (name === "onclick" && tag === "BUTTON") {
+          const m = val.match(SUGGEST_ONCLICK_RE);
+          if (m) {
+            // Backend liefert seit 26.10.2026 ein JSON-String-Literal ("..."),
+            // ältere FAQ-Einträge noch '...'. JSON dekodieren, sonst roh nehmen.
+            let frage = m[2];
+            if (m[1] === '"') {
+              try { frage = JSON.parse('"' + m[2] + '"'); } catch (_) { /* roh lassen */ }
+            }
+            // Neu aufbauen statt übernehmen: nur noch dieser eine Aufruf möglich.
+            el.setAttribute("onclick", "sendSuggestedQuestion(" + JSON.stringify(frage) + ")");
+            continue;
+          }
+        }
+        el.removeAttribute(attr.name);
+      }
+      if (tag === "A" && el.hasAttribute("href")) {
+        el.setAttribute("target", "_blank");
+        el.setAttribute("rel", "noopener noreferrer");
+      }
+      if (tag === "BUTTON") el.setAttribute("type", "button");
+      walk(el);
+    }
+  };
+  walk(tpl.content);
+  return tpl.innerHTML;
+}
+
 function blase(text, art, alsHtml, ziel){
   const d = document.createElement("div");
   d.className = "blase " + art;
-  if (alsHtml) d.innerHTML = text; else d.textContent = text;
+  if (alsHtml) d.innerHTML = sanitizeBotHtml(text); else d.textContent = text;
   (ziel || $("#verlauf")).appendChild(d);
   return d;
 }
@@ -1401,7 +1472,13 @@ async function frageStellen(text){
   }
 }
 
+/* Server erst fragen, wenn jemand den Bot öffnet – und nur einmal (Vorschlag Hans, 26.10.2026).
+   Vorher ging bei jedem Seitenaufruf eine Anfrage an den externen Server. */
+let botGeprueft = false;
 async function botStatus(){
+  if (botGeprueft) return;
+  botGeprueft = true;
+  $("#botlage").textContent = "verbinde …";
   let erreichbar = false;
   try { erreichbar = (await fetch(API + "/health")).ok; } catch { erreichbar = false; }
   $("#punkt").dataset.status = erreichbar ? "ok" : "weg";
@@ -1414,6 +1491,7 @@ async function botStatus(){
    sondern öffnet sich auf Wunsch – über den Knopf unten rechts, den Hinweis
    unter dem Suchfeld oder «Bot dazu fragen» auf einer Karte. */
 function botOeffnen(){
+  botStatus();
   $("#rechts").hidden = false; $("#btnBot").hidden = true;
   $("#btnBot").setAttribute("aria-expanded","true");
   $("#schleier").hidden = window.innerWidth > 900;
@@ -2129,8 +2207,8 @@ $("#redaktionUmschalten")?.addEventListener("click", e => {
 });
 
 alles();
-botStatus();
 baueEinstieg();
+
 </script>
 
 
