@@ -1462,7 +1462,7 @@ async function frageStellen(text){
   } catch (e) {
     laedt.remove();
     blase("Der Bot ist nicht erreichbar (" + e.message + "). Auf GitHub Pages " +
-          "und perino.info funktioniert er; von einer anderen Adresse blockiert " +
+          "funktioniert er; von einer anderen Adresse blockiert " +
           "ihn der Browser (CORS). Die Liste arbeitet unabhängig weiter.",
           "bot fehler", false, austausch);
     frageOben();
@@ -1471,6 +1471,9 @@ async function frageStellen(text){
     $("#frage").focus();
   }
 }
+
+// Vorschlags-Knöpfe in Bot-Antworten (z. B. «Frische KI-Suche») schicken ihre Frage hierher.
+window.sendSuggestedQuestion = q => frageStellen(q);
 
 /* Server erst fragen, wenn jemand den Bot öffnet – und nur einmal (Vorschlag Hans, 26.10.2026).
    Vorher ging bei jedem Seitenaufruf eine Anfrage an den externen Server. */
