@@ -413,6 +413,14 @@
   .dd-opt[aria-checked="true"] .kasten::after{content:""; position:absolute; left:4px; top:1px; width:4px; height:8px;
     border-right:2px solid #fff; border-bottom:2px solid #fff; transform:rotate(45deg)}
   .dd-opt[aria-checked="true"]{font-weight:600}
+  .dd-opt.unter{padding-left:29px}   /* 5.11.2026: unter «Good Practice» */
+  .dd-gruppe{margin:10px 0 2px; padding:2px 9px; font-size:12.5px; font-weight:700; line-height:1.3; color:var(--violett-tief)}   /* 5.11.2026: Cluster in Fach / Ich möchte */
+  .dd-gruppe:first-child, .dd-opt.alle + .dd-gruppe{margin-top:4px}
+  #ddAnliegen .dd-gruppe{color:var(--orange-tief)}
+  .dd-opt.gruppe-wahl{margin-top:8px; font-weight:700; font-size:12.5px; color:var(--violett-tief)}   /* wählbare Fächergruppe (5.11.2026) */
+  .dd-opt.gruppe-wahl:first-child, .dd-opt.alle + .dd-opt.gruppe-wahl{margin-top:0}
+  #ddFach .dd-opt.gruppe-wahl[aria-selected="true"]{color:#fff}
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .dd-gruppe, :root:not([data-theme="light"]) .dd-opt.gruppe-wahl:not([aria-selected="true"]){color:#c9a6dc} }
   .dd-hinweis{margin:0; padding:4px 9px 6px; font-size:11.5px; color:var(--muted)}
   .ddloeschen{background:none; border:0; padding:0 4px; color:#fff; font:inherit; font-size:13px; font-weight:600;
     text-decoration:underline; text-underline-offset:3px; cursor:pointer; opacity:.9}
@@ -696,6 +704,25 @@
     body .haupt{grid-template-columns:minmax(0,1fr) !important}
     body:not(.empfang) .filterleiste, .filterleiste{position:static; max-height:none; overflow:visible; gap:8px}
   }
+  /* =====================================================================
+     ZWISCHENSEITEN «Mein Fach» und «Ich möchte …» (5.11.2026)
+     Zwischen Empfang und Ergebnisseite: ruhige Ansicht im Design von «Wo fange ich an?».
+     Accordions = Cluster (Fächergruppen bzw. Themen); Klick öffnet, zweiter Klick auf
+     ein Fach / Anliegen führt zur Ergebnisseite mit gesetztem Filter.
+     ===================================================================== */
+  #zwischen{display:none; background:var(--empfang); min-height:calc(100dvh - 38px); padding:112px 32px 80px}
+  body.zwischen #zwischen{display:block}
+  body.zwischen .start, body.zwischen .haupt, body.zwischen .bot-fab{display:none}
+  body.zwischen .dlhtop{display:flex}
+  #zwischen h1{font-size:clamp(28px,4vw,42px); line-height:1.1; margin:0 0 16px; letter-spacing:-.02em; color:var(--ink)}
+  .zw-wahl{list-style:none; margin:0; padding:0; display:grid; gap:10px}
+  .zw-wahl button{display:flex; align-items:baseline; gap:14px; width:100%; padding:14px 16px; border:1px solid var(--line);
+    border-radius:12px; background:var(--bg); cursor:pointer; font:inherit; text-align:left; color:var(--ink)}
+  .zw-wahl button:hover, .zw-wahl button:focus-visible{border-color:var(--orange); box-shadow:0 0 0 2px var(--orange-rand); outline:none}
+  .zw-wahl .t{color:var(--orange); font-weight:700; font-size:16.5px; line-height:1.35; text-decoration:underline; text-underline-offset:3px}
+  .zw-wahl button:hover .t{color:#b44700}
+  .zw-wahl .n{margin-left:auto; color:var(--muted); font-size:13.5px; white-space:nowrap}
+  @media (max-width:900px){ #zwischen{padding:76px 16px 60px} }
 </style>
 
 </head>
@@ -729,7 +756,7 @@
           <div><b>Mein Fach</b><span>Steige über Dein eigenes Fach ein</span></div><i aria-hidden="true">→</i>
         </button>
         <button class="kachel k-anliegen" id="kachelAnliegen" type="button">
-          <div><b>Ich möchte …</b><span>anders prüfen, KI-Assistenten bauen, meine Lehr-Aktivitäten digital optimieren, …</span></div><i aria-hidden="true">→</i>
+          <div><b>Ich möchte …</b><span>meine Lehraktivitäten optimieren, KI-Assistenten bauen, Prüfungen variieren …</span></div><i aria-hidden="true">→</i>
         </button>
       </div>
 
@@ -747,6 +774,22 @@
       <div id="situationen"></div>
 
       <p class="ein-fuss">
+        <span>Kontakt aufnehmen? <a href="mailto:info@dlh.zh.ch">info@dlh.zh.ch</a></span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== Zwischenseite «Mein Fach» / «Ich möchte …» (5.11.2026): Cluster als Accordions, Inhalt per JS ===== -->
+  <section id="zwischen" aria-labelledby="zwTitel">
+    <div class="ein-innen">
+      <button class="ein-zurueck" id="zwZurueck" type="button">← zurück zum Start</button>
+      <h1 id="zwTitel" tabindex="-1"></h1>
+      <p class="ein-lead" id="zwLead"></p>
+      <p class="ein-sub" id="zwSub"></p>
+      <div id="zwGruppen"></div>
+
+      <p class="ein-fuss">
+        <span><a href="#" id="zwAlle">Ohne Auswahl alle Inspirationen ansehen →</a></span>
         <span>Kontakt aufnehmen? <a href="mailto:info@dlh.zh.ch">info@dlh.zh.ch</a></span>
       </p>
     </div>
@@ -946,6 +989,12 @@ const SCHNELL = [
 ];
 
 const ANG = DB.angebote, ANL = DB.anliegen, FAECHER = DB.faecher;
+/* Wortlaute und Reihenfolge der Anliegen (5.11.2026, Wortlaut André) – nur Anzeige, die Daten bleiben unverändert.
+   Steht vor dem Suchindex, damit auch die neuen Wörter gefunden werden. */
+ANL[1] = "… Prüfungen variieren: Leistungsnachweise mit und trotz KI";
+ANL[2] = "… formatives Feedback und den Lernstand sichtbar machen";
+/* Reihenfolge in «Ich möchte …»: formatives Feedback an Position 2 */
+const ANL_REIHE = [0, 2, 1, ...ANL.map((_, i) => i).filter(i => i > 2)];
 /* Reihenfolge der Formate für Filter-Knöpfe und Ergebnisgruppen (28.9.2026) */
 const FORMATE = ["Praxisbeispiele KI","Good Practice","eAssessment-Methoden","Impuls-Workshop","Innovationsfonds",
                   "Tipp des Monats","Digi Talk","Weiterbildung","Kuratiertes","Podcast","Essenz"];   /* 24.10.2026: drei Arten aus dem WB-Kompass */
@@ -962,7 +1011,8 @@ const FORMAT_DEFINITIONEN = {
   "Weiterbildung":"Holangebot an Deiner Schule, Kurs oder Selbstlernkurs des DLH (auch mit EB Digital)"
 };
 /* Anzeigenamen in den Filtern (13.10.2026): Daten bleiben gleich, nur die Beschriftung im Feld ändert */
-const ANZEIGE = {format:{"Essenz":"Essenzen aus Impuls-Workshops"}, stufen:{"Überfachlich":"Schultyp übergreifend"},
+const ANZEIGE = {format:{"Essenz":"Essenzen aus Impuls-Workshops", "Praxisbeispiele KI":"Praxisbeispiele «Denken mit KI»",
+                         "GP Impuls-Workshop":"Impuls-Workshops ganz nah an der Praxis", "GP Innovationsfonds":"Innovationsfonds mit greifbarem Ergebnis"}, stufen:{"Überfachlich":"Schultyp übergreifend"},
                fach:{"Überfachlich":"für alle Fächer"}};   /* 14.10.2026: Fachliste */
 const anzeige = (feld, w) => (ANZEIGE[feld] && ANZEIGE[feld][w]) || w;
 const STUFEN = ["Gymnasium","Berufsbildung"];   /* «Schultyp übergreifend» entfällt (14.10.2026) */
@@ -1015,7 +1065,19 @@ function istGoodPractice(a){
     return (a.tags||[]).includes("easy to use") || GP_VORGESTELLT.some(k => (a.url||"").includes(k));
   return false;
 }
-const hatFormat = (a, f) => f === "Good Practice" ? a.gp : a.format === f;
+/* Art des Angebots (5.11.2026): «Good Practice» zuoberst, darunter eingerückt die vier Teile der
+   Good-Practice-Regel (istGoodPractice). Zwei davon sind Teilmengen einer Art und deshalb eigene
+   «virtuelle» Werte; Impuls-Workshop und Innovationsfonds als ganze Art stehen weiter unten. */
+/* Wählbare Fächergruppen (5.11.2026): Z.fach darf auch der Titel einer Gruppe sein, dann passt jedes
+   Angebot mit mindestens einem Fach daraus. Gefüllt im Abschnitt «Zwischenseiten» aus ZW.fach. */
+const FACH_GRUPPEN = {};
+const fachTrifft = (a, wahl) => FACH_GRUPPEN[wahl]
+  ? (a.faecher||[]).some(x => FACH_GRUPPEN[wahl].includes(x))
+  : (a.faecher||[]).includes(wahl);
+const GP_TEIL = {"GP Impuls-Workshop":"Impuls-Workshop", "GP Innovationsfonds":"Innovationsfonds"};
+const GP_UNTER = ["eAssessment-Methoden", "Praxisbeispiele KI", "GP Impuls-Workshop", "GP Innovationsfonds"];
+const ARTEN_DD = ["Good Practice", ...GP_UNTER, ...FORMATE.filter(x => x !== "Good Practice" && !GP_UNTER.includes(x))];
+const hatFormat = (a, f) => f === "Good Practice" ? a.gp : GP_TEIL[f] ? (a.gp && a.format === GP_TEIL[f]) : a.format === f;
 /* Schultyp nur noch Gymnasium / Berufsbildung (14.10.2026). Daten bleiben unverändert;
    beim Laden wird «Überfachlich» übersetzt:
    - nur «Überfachlich», oder Gymnasium + Berufsbildung       -> beide Schultypen
@@ -1056,7 +1118,7 @@ function passt(a, ausser){
   // zusätzlich"), ihr `passes()` tut es aber nicht. Dadurch stand auf dem
   // Chip "Latein 4" und die Liste zeigte 195. Wer die überfachlichen will,
   // hat dafür einen eigenen Chip.
-  if (ausser !== "fach" && Z.fach && !(a.faecher||[]).includes(Z.fach)) return false;
+  if (ausser !== "fach" && Z.fach && !fachTrifft(a, Z.fach)) return false;   /* auch ganze Fächergruppe (5.11.2026) */
   if (ausser !== "anliegen" && Z.anliegen !== null
       && !(a.anliegen||[]).includes(Z.anliegen)) return false;
   if (ausser !== "format" && Z.formate.size && ![...Z.formate].some(f => hatFormat(a, f))) return false;
@@ -1110,7 +1172,7 @@ function baueFilter(){
 
   const l = $("#anliegen"); l.textContent = "";
   let sichtbareAnliegen = 0;
-  ANL.forEach((txt,i) => {
+  ANL_REIHE.forEach(i => { const txt = ANL[i];
     const n = ANG.filter(a => passt(a,"anliegen") && (a.anliegen||[]).includes(i)).length;
     if (alleFaecher && !n) return;
     if (!alleAnliegen && sichtbareAnliegen >= 5) return;
@@ -1150,6 +1212,7 @@ function baueFilter(){
 let gezeigt = 60;
 
 const ANL_KURZ = ["KI als Tutorin", "Anders prüfen", "Feedback und Lernstand", "Prompting und Assistenten", "Kantonale KI-Tools", "Fachschaft begleiten", "Lehr-Aktivitäten", "Abschlussarbeiten", "Sprachen, Lesen und Schreiben", "Medienkompetenz", "Lernumgebungen", "Regeln und Weiterbildung", "Innovationsfondsprojekt", "Konzentration", "KI verstehen", "Material und Werkzeuge", "Unterrichtsmaterial", "VR und digitales Labor", "Gamification", "Selbstorganisiertes Lernen"];
+ANL_KURZ[1] = "Prüfungen variieren";   /* 5.11.2026 */
 /* Personen (Input, Projektleitung, Autorschaft) – von den Artikelseiten auf dlh.zh.ch, Stand 20.10.2026 */
 const PERSONEN_ROLLE = {"Innovationsfonds":"Projektleitung", "Praxisbeispiele KI":"Autorschaft", "Podcast":"Im Gespräch", "Tipp des Monats":"Video", "Digi Talk":"Autorschaft"};
 function personenZeile(a){
@@ -1228,7 +1291,7 @@ function zeichneGruppen(t, liste){
   if (Z.sortierung === "format"){
     reihenfolge = [...FORMATE, ...gruppen.keys()].filter((v,i,a) => gruppen.has(v) && a.indexOf(v)===i);
   } else if (Z.sortierung === "anliegen"){
-    reihenfolge = [...ANL, ohne].filter(v => gruppen.has(v));
+    reihenfolge = [...ANL_REIHE.map(i => ANL[i]), ohne].filter(v => gruppen.has(v));
   } else if (Z.sortierung === "aufwand"){
     // Nutzungsart mit Gruppenüberschriften (1.10.2026): Unterrichtsvorlage, Unterrichtsmaterial, Unterrichtsimpuls
     reihenfolge = [...AUFWAENDE, "Ohne Angabe zur Nutzungsart"].filter(v => gruppen.has(v));
@@ -1814,7 +1877,7 @@ $("#sortwahl").dataset.kategorie = Z.sortierung;
 const DD = {
   fach:     {id:"ddFach",     titel:"Mein Fach",        kurz:"Mein Fach"},
   anliegen: {id:"ddAnliegen", titel:"Ich möchte …",     kurz:"Ich möchte"},
-  format:   {id:"ddFormat",   titel:"Art des Angebots", kurz:"Art",     menge:() => Z.formate,   werte:() => FORMATE,   feld:"format"},
+  format:   {id:"ddFormat",   titel:"Art des Angebots", kurz:"Art",     menge:() => Z.formate,   werte:() => ARTEN_DD,   feld:"format"},
   aufwand:  {id:"ddAufwand",  titel:"Nutzungsart",      kurz:"Nutzungsart", menge:() => Z.aufwaende, werte:() => AUFWAENDE, feld:"aufwand"},
   stufe:    {id:"ddStufe",    titel:"Schultyp",         kurz:"Schultyp",   menge:() => Z.stufen,    werte:() => STUFEN,    feld:"stufen"}
 };
@@ -1848,24 +1911,46 @@ function ddOption(text, n, gewaehlt, mehrfach, beiKlick){
   o.addEventListener("click", beiKlick);
   return o;
 }
+/* Cluster-Überschrift im Dropdown (5.11.2026): nur Beschriftung, nicht wählbar */
+function ddGruppe(titel){
+  const h = document.createElement("p");
+  h.className = "dd-gruppe"; h.textContent = titel.replace(/^…\s*/, "");
+  return h;
+}
 function ddBauen(k){
   const p = ddEl(k, ".dd-panel"); p.textContent = "";
   if (k === "fach"){
     if (Z.fach){ const o = ddOption("alle Fächer", undefined, false, false, () => {
       Z.fach = null; Z.nurEins = null; setzeSortierung("fach"); ddZu(true); alles(); }); o.classList.add("alle"); p.appendChild(o); }
-    FAECHER.map(({fach}) => fach).filter(f => f !== "Überfachlich").sort(fachReihe)   /* «für alle Fächer» nicht in der Fachliste (14.10.2026) */.forEach(fach => {
-      const n = ANG.filter(a => passt(a,"fach") && (a.faecher||[]).includes(fach)).length;
-      p.appendChild(ddOption(anzeige("fach", fach), n, Z.fach === fach, false, () => {
-        Z.fach = Z.fach === fach ? null : fach; Z.nurEins = null;
-        setzeSortierung(Z.fach ? "format" : "fach"); ddZu(true); alles(); }));
+    /* 5.11.2026: Fächer in den Clustern der Zwischenseite (ZW.fach), Cluster links, Fächer eingerückt */
+    ZW.fach.gruppen.forEach(g => {
+      if (g.waehlbar){
+        /* ohne Zahl (5.11.2026): die Summe der Fächer ginge nicht auf, weil viele Angebote mehrere Fächer haben */
+        const o = ddOption(g.titel, undefined, Z.fach === g.titel, false, () => {
+          Z.fach = Z.fach === g.titel ? null : g.titel; Z.nurEins = null;
+          setzeSortierung(Z.fach ? "format" : "fach"); ddZu(true); alles(); });
+        o.classList.add("gruppe-wahl"); o.title = "alle Fächer dieser Gruppe zusammen"; p.appendChild(o);
+      } else p.appendChild(ddGruppe(g.titel));
+      g.werte.map(zwFach).filter(Boolean).forEach(fach => {
+        const n = ANG.filter(a => passt(a,"fach") && (a.faecher||[]).includes(fach)).length;
+        const o = ddOption(anzeige("fach", fach), n, Z.fach === fach, false, () => {
+          Z.fach = Z.fach === fach ? null : fach; Z.nurEins = null;
+          setzeSortierung(Z.fach ? "format" : "fach"); ddZu(true); alles(); });
+        o.classList.add("unter"); p.appendChild(o);
+      });
     });
   } else if (k === "anliegen"){
     if (Z.anliegen !== null){ const o = ddOption("alle Anliegen", undefined, false, false, () => {
       Z.anliegen = null; Z.nurEins = null; ddZu(true); alles(); }); o.classList.add("alle"); p.appendChild(o); }
-    ANL.forEach((txt,i) => {
-      const n = ANG.filter(a => passt(a,"anliegen") && (a.anliegen||[]).includes(i)).length;
-      p.appendChild(ddOption(txt.replace(/^…\s*/,""), n, Z.anliegen === i, false, () => {
-        Z.anliegen = Z.anliegen === i ? null : i; Z.nurEins = null; ddZu(true); alles(); }));
+    /* 5.11.2026: Anliegen in den Clustern der Zwischenseite (ZW.anliegen), Cluster links, Anliegen eingerückt */
+    ZW.anliegen.gruppen.forEach(g => {
+      p.appendChild(ddGruppe(g.titel));
+      g.werte.filter(i => ANL[i]).forEach(i => {
+        const n = ANG.filter(a => passt(a,"anliegen") && (a.anliegen||[]).includes(i)).length;
+        const o = ddOption(ANL[i].replace(/^…\s*/,""), n, Z.anliegen === i, false, () => {
+          Z.anliegen = Z.anliegen === i ? null : i; Z.nurEins = null; ddZu(true); alles(); });
+        o.classList.add("unter"); p.appendChild(o);
+      });
     });
   } else {
     const d = DD[k], m = d.menge();
@@ -1873,10 +1958,12 @@ function ddBauen(k){
     d.werte().forEach((w, idx) => {
       const n = ANG.filter(a => passt(a,k) &&
         (d.feld === "stufen" ? (a.stufen||[]).includes(w) : d.feld === "format" ? hatFormat(a,w) : a[d.feld] === w)).length;
-      p.appendChild(ddOption(anzeige(d.feld, w), n, m.has(w), true, () => {
+      const o = ddOption(anzeige(d.feld, w), n, m.has(w), true, () => {
         m.has(w) ? m.delete(w) : m.add(w); Z.nurEins = null; alles();
         ddBauen(k); p.querySelectorAll(".dd-opt")[idx]?.focus();
-      }));
+      });
+      if (d.feld === "format" && GP_UNTER.includes(w)) o.classList.add("unter");   /* eingerückt unter Good Practice (5.11.2026) */
+      p.appendChild(o);
     });
   }
 }
@@ -2269,6 +2356,117 @@ $("#redaktionUmschalten")?.addEventListener("click", e => {
   e.currentTarget.setAttribute("aria-pressed", String(aus));
   e.currentTarget.textContent = aus ? "Redaktionshinweise einblenden" : "Redaktionshinweise ausblenden";
 });
+
+
+/* ---------- Zwischenseiten «Mein Fach» und «Ich möchte …» (5.11.2026) ----------
+   Die Kacheln führen nicht mehr direkt in die Ergebnisse mit offenem Dropdown, sondern auf eine
+   ruhige Zwischenseite (Design wie «Wo fange ich an?»). Die Cluster sind ein VORSCHLAG und können
+   hier frei angepasst werden: Fächer per Name (wie in DB.faecher), Anliegen per Nummer (0–19). */
+const ZW = {
+  fach: {
+    titel: "Mein Fach",
+    lead: "In welchem Fach unterrichtest Du?",
+    sub: "Öffne eine Fächergruppe und wähle Dein Fach. Danach kannst Du weiter eingrenzen.",
+    gruppen: [
+      {titel: "Sprachen", waehlbar: true, werte: ["Deutsch", "Englisch", "Französisch", "Italienisch", "Spanisch", "Russisch", "Latein", "Griechisch"]},
+      {titel: "Mathematik, Informatik und Naturwissenschaften", waehlbar: true, werte: ["Mathematik", "Informatik", "Physik", "Chemie", "Biologie"]},
+      {titel: "Geschichte, Geographie, Wirtschaft und Gesellschaft", werte: ["Geschichte (und Politik)", "Geographie", "Wirtschaft", "Sozialwissenschaften"]},
+      {titel: "Bildnerisches Gestalten und Sport", werte: ["Bildnerisches Gestalten", "Sport"]},
+      {titel: "Berufsbildung: ABU, IKA, Berufskunde und Brückenangebot", werte: ["ABU", "IKA", "Berufskunde", "EBA – zweijährige Grundbildung", "Brückenangebot"]},
+      {titel: "Berufsbildung: einzelne Berufe", werte: ["Architektur EFZ", "Automobilberufe", "Coiffeuse/Coiffeur", "Elektroberufe", "FaGe und FaBe – Gesundheit und Betreuung", "Geomatiker:innen EFZ", "Landwirtschaftsmechaniker:innen", "Maurer:innen", "Schreiner:in"]}
+    ]
+  },
+  anliegen: {
+    titel: "Ich möchte …",
+    lead: "Was möchtest Du in Deinem Unterricht angehen?",
+    sub: "Öffne ein Thema und wähle, was am besten passt. Danach kannst Du weiter eingrenzen.",
+    gruppen: [
+      {titel: "… KI verstehen und gezielt einsetzen", werte: [14, 4, 3, 5, 0]},
+      {titel: "… prüfen, Feedback geben und Arbeiten begleiten", werte: [2, 1, 7]},
+      {titel: "… meinen Unterricht wirkungsvoll gestalten", werte: [6, 19, 18, 13]},
+      {titel: "… Material und Lernumgebungen erstellen", werte: [16, 15, 10, 17]},
+      {titel: "… Sprach-, Medien- und Recherchekompetenz fördern", werte: [8, 9]},
+      {titel: "… an meiner Schule etwas bewegen", werte: [11, 12]}
+    ]
+  }
+};
+const ohneTrenn = t => (t || "").replace(/­/g, "");
+const zwFach = name => (FAECHER.find(f => ohneTrenn(f.fach) === ohneTrenn(name)) || {}).fach;
+// Kontrolle: jedes Fach (ausser «Überfachlich») und jedes Anliegen genau einmal in einem Cluster
+{ const f = ZW.fach.gruppen.flatMap(g => g.werte.map(zwFach));
+  FAECHER.map(x => x.fach).filter(x => x !== "Überfachlich" && !f.includes(x)).forEach(x => console.warn("Zwischenseite: Fach ohne Cluster", x));
+  ZW.fach.gruppen.forEach(g => g.werte.forEach(w => { if (!zwFach(w)) console.warn("Zwischenseite: Fach unbekannt", w); }));
+  const a = ZW.anliegen.gruppen.flatMap(g => g.werte);
+  ANL.forEach((t, i) => { if (!a.includes(i)) console.warn("Zwischenseite: Anliegen ohne Cluster", i, t); }); }
+
+ZW.fach.gruppen.filter(g => g.waehlbar).forEach(g => { FACH_GRUPPEN[g.titel] = g.werte.map(zwFach).filter(Boolean); });
+let zwArt = null;
+function zwischenBauen(art){
+  const d = ZW[art];
+  $("#zwTitel").textContent = d.titel;
+  $("#zwLead").textContent = d.lead;
+  $("#zwSub").textContent = d.sub;
+  $("#zwGruppen").innerHTML = d.gruppen.map((g, gi) => {
+    const zeilen = g.werte.map(w => {
+      let wert, text, n;
+      if (art === "fach"){
+        wert = zwFach(w); if (!wert) return "";
+        text = anzeige("fach", wert);
+        n = ANG.filter(a => passt(a, "fach") && (a.faecher || []).includes(wert)).length;
+      } else {
+        wert = w; if (!ANL[w]) return "";
+        text = ANL[w].replace(/^…\s*/, "");
+        n = ANG.filter(a => passt(a, "anliegen") && (a.anliegen || []).includes(w)).length;
+      }
+      return `<li><button type="button" data-wert="${esc(String(wert))}"><span class="t">${esc(text)}</span><span class="n">${n} Inspiration${n === 1 ? "" : "en"}</span></button></li>`;
+    }).join("");
+    return `<div class="sit" id="zw${gi}">
+      <button type="button" aria-expanded="false" aria-controls="zwInhalt${gi}">${esc(g.titel)}</button>
+      <div class="sit-inhalt" id="zwInhalt${gi}" hidden><ul class="zw-wahl">${zeilen}</ul></div></div>`;
+  }).join("");
+}
+function zwischenAuf(art){
+  zwArt = art;
+  fokusEnde(); botSchliessen(); ansichtZu(); ddZu();
+  allesZuruecksetzen();            // Zahlen ohne Filter
+  zwischenBauen(art);
+  delete document.body.dataset.einstieg;
+  document.body.classList.remove("empfang", "einstieg");
+  document.body.classList.add("zwischen");
+  window.scrollTo({top:0});
+  $("#zwTitel").focus({preventScroll:true});
+}
+function zwischenVerlassen(){ document.body.classList.remove("zwischen"); }
+function zwWaehlen(wert){
+  const art = zwArt;
+  zwischenVerlassen();
+  mitFilter(() => {
+    if (art === "fach"){ Z.fach = wert; setzeSortierung("format"); }   // wie die Wahl im Dropdown
+    else Z.anliegen = +wert;
+  });
+  document.body.dataset.einstieg = art;   // passendes Dropdown farbig wie bisher
+  window.scrollTo({top:0});
+}
+$("#zwGruppen").addEventListener("click", e => {
+  const w = e.target.closest(".zw-wahl button");
+  if (w){ zwWaehlen(w.dataset.wert); return; }
+  const b = e.target.closest(".sit > button");
+  if (!b) return;
+  const box = $("#zwGruppen"), sit = b.parentElement, auf = b.getAttribute("aria-expanded") !== "true";
+  box.querySelectorAll(".sit").forEach(x => {   // immer nur ein Cluster offen – ruhiger
+    x.classList.remove("offen"); x.querySelector("button").setAttribute("aria-expanded", "false");
+    x.querySelector(".sit-inhalt").hidden = true;
+  });
+  if (auf){
+    sit.classList.add("offen"); b.setAttribute("aria-expanded", "true");
+    sit.querySelector(".sit-inhalt").hidden = false;
+    sit.scrollIntoView({block:"nearest", behavior:"smooth"});
+  }
+});
+$("#zwZurueck").addEventListener("click", () => { zwischenVerlassen(); zumStart(); });
+$("#zwAlle").addEventListener("click", e => { e.preventDefault(); zwischenVerlassen(); allesZuruecksetzen(); zurArbeit(); window.scrollTo({top:0}); });
+// Kacheln «Mein Fach» / «Ich möchte …» führen jetzt auf die Zwischenseite
+fokusStart = zwischenAuf;
 
 alles();
 baueEinstieg();
