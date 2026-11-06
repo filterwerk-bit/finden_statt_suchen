@@ -31,7 +31,8 @@
   :where(button,input,select,a):focus-visible{outline:3px solid var(--orange); outline-offset:2px}
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{margin:0; background:var(--grund); color:var(--ink);
+  /* 6.11.2026: ganze Seite zartviolett wie Einstieg und Zwischenseite (aus einem Guss) */
+  body{margin:0; background:var(--empfang); color:var(--ink);
        font:15px/1.5 "Helvetica Neue LT Std","Helvetica Neue",Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased}
   button{font:inherit;color:inherit}
   a{color:var(--orange)}
@@ -1163,7 +1164,7 @@ function baueFilter(){
     const n = ANG.filter(a => passt(a,"fach") && (a.faecher||[]).includes(fach)).length;
     f.appendChild(chip(anzeige("fach", fach), Z.fach===fach,
       () => { Z.fach = Z.fach===fach ? null : fach; Z.nurEins=null;
-              setzeSortierung(Z.fach ? "format" : "fach"); alles(); }, n));
+              setzeSortierung("fach"); alles(); }, n));
   });
 
   $("#alleFaecher").setAttribute("aria-expanded", String(alleFaecher));
@@ -1261,7 +1262,7 @@ function karte(a, mitId=true){
         '<button class="botfrage" type="button" data-frage="'+esc(a.titel)+'">Bot dazu fragen</button></h3>'+
     '</div>'+
     '<p>'+esc(a.lead)+
-      (meta.length ? ' <span class="merkmale"><span class="merkmale-intro">Eingeordnet unter:</span> '+meta.join(", ")+'</span>' : '')+
+      /* 6.11.2026: «Eingeordnet unter: …» entfernt (Wunsch André) – Input/Personen und Downloads bleiben */
     '</p>'+personenZeile(a)+downloadZeile(a);
   d.querySelector("[data-frage]").addEventListener("click", () => {
     frageStellen('Was steckt hinter «'+a.titel+'»?');
@@ -1297,9 +1298,11 @@ function zeichneGruppen(t, liste){
     reihenfolge = [...AUFWAENDE, "Ohne Angabe zur Nutzungsart"].filter(v => gruppen.has(v));
   } else {
     // Das gewählte Fach steht zuoberst, die übrigen Fächer alphabetisch darunter (1.10.2026)
+    /* 6.11.2026: bei einer ganzen Fächergruppe (Sprachen, MINT) stehen deren Fächer zuoberst */
+    const gewaehlt = f => !!Z.fach && (f===Z.fach || (FACH_GRUPPEN[Z.fach]||[]).includes(f));
     reihenfolge = [...gruppen.keys()].sort((a,b) => {
-      if (Z.fach && a===Z.fach) return -1;
-      if (Z.fach && b===Z.fach) return 1;
+      if (gewaehlt(a) && !gewaehlt(b)) return -1;
+      if (gewaehlt(b) && !gewaehlt(a)) return 1;
       if (a===ohne) return 1;
       if (b===ohne) return -1;
       return a.localeCompare(b,"de");
@@ -1928,14 +1931,14 @@ function ddBauen(k){
         /* ohne Zahl (5.11.2026): die Summe der Fächer ginge nicht auf, weil viele Angebote mehrere Fächer haben */
         const o = ddOption(g.titel, undefined, Z.fach === g.titel, false, () => {
           Z.fach = Z.fach === g.titel ? null : g.titel; Z.nurEins = null;
-          setzeSortierung(Z.fach ? "format" : "fach"); ddZu(true); alles(); });
+          setzeSortierung("fach"); ddZu(true); alles(); });
         o.classList.add("gruppe-wahl"); o.title = "alle Fächer dieser Gruppe zusammen"; p.appendChild(o);
       } else p.appendChild(ddGruppe(g.titel));
       g.werte.map(zwFach).filter(Boolean).forEach(fach => {
         const n = ANG.filter(a => passt(a,"fach") && (a.faecher||[]).includes(fach)).length;
         const o = ddOption(anzeige("fach", fach), n, Z.fach === fach, false, () => {
           Z.fach = Z.fach === fach ? null : fach; Z.nurEins = null;
-          setzeSortierung(Z.fach ? "format" : "fach"); ddZu(true); alles(); });
+          setzeSortierung("fach"); ddZu(true); alles(); });
         o.classList.add("unter"); p.appendChild(o);
       });
     });
@@ -2441,7 +2444,7 @@ function zwWaehlen(wert){
   const art = zwArt;
   zwischenVerlassen();
   mitFilter(() => {
-    if (art === "fach"){ Z.fach = wert; setzeSortierung("format"); }   // wie die Wahl im Dropdown
+    if (art === "fach"){ Z.fach = wert; setzeSortierung("fach"); }   // 6.11.2026: vom Fach her nach Fach sortiert, gewähltes Fach zuoberst
     else Z.anliegen = +wert;
   });
   document.body.dataset.einstieg = art;   // passendes Dropdown farbig wie bisher
