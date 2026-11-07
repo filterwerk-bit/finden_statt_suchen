@@ -2486,6 +2486,39 @@ fokusStart = zwischenAuf;
 alles();
 baueEinstieg();
 
+/* ---------- Einstieg über einen angereicherten Link (7.11.2026) ----------------
+   Nur wenn der Link Angaben trägt, z. B. vom Kreis «Good Practice» auf dlh.zh.ch:
+     …/Suchen-Filter-Ergebnisse-Dropdown_links.html?art=eassessment,praxis-ki&sort=anliegen
+   art  = eine oder mehrere Arten des Angebots, mit Komma getrennt. Erlaubt sind die Kurznamen
+          unten und jede Art als «Slug» (klein, ohne Umlaute/Satzzeichen, Leerzeichen → «-»),
+          z. B. good-practice, eassessment-methoden, praxisbeispiele-ki, essenz, tipp-des-monats.
+   sort = fach | art | anliegen | nutzungsart | datum | titel
+   Unbekannte Werte werden still übergangen. Ohne gültige Angabe startet die Seite wie immer. */
+const LINK_ART_KURZ = {"eassessment":"eAssessment-Methoden", "praxis-ki":"Praxisbeispiele KI",
+  "denken-mit-ki":"Praxisbeispiele KI", "gp":"Good Practice"};
+const LINK_SORT = {fach:"fach", art:"format", format:"format", anliegen:"anliegen", nutzungsart:"aufwand", datum:"datum", titel:"titel"};
+function linkSlug(t){
+  return String(t).toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+    .replace(/[«»"„“]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+(function linkEinstieg(){
+  let q;
+  try { q = new URLSearchParams(window.location.search); } catch(e){ return; }
+  const artRoh = (q.get("art") || "").split(",").map(x => linkSlug(x)).filter(Boolean);
+  const sortRoh = linkSlug(q.get("sort") || "");
+  const nachSlug = {};
+  ARTEN_DD.forEach(w => { nachSlug[linkSlug(w)] = w; nachSlug[linkSlug(anzeige("format", w))] = w; });
+  Object.entries(LINK_ART_KURZ).forEach(([k, w]) => { nachSlug[k] = w; });
+  const arten = [...new Set(artRoh.map(x => nachSlug[x]).filter(Boolean))];
+  const sort = LINK_SORT[sortRoh];
+  if (!arten.length && !sort) return;            // gewöhnlicher Aufruf: nichts tun
+  mitFilter(() => {
+    arten.forEach(w => Z.formate.add(w));
+    if (sort) setzeSortierung(sort);
+  });
+  window.scrollTo({top:0});
+})();
+
 </script>
 
 
