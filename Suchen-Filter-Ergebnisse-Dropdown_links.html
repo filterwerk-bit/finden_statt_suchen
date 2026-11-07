@@ -2516,6 +2516,7 @@ function linkSlug(t){
     arten.forEach(w => Z.formate.add(w));
     if (sort) setzeSortierung(sort);
   });
+  if (arten.length) ddOeffnen("format");   // Orientierung: gewählte Arten sofort sichtbar (7.11.2026)
   window.scrollTo({top:0});
 })();
 
