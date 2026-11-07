@@ -1025,6 +1025,9 @@ const ANZEIGE = {format:{"Essenz":"Essenzen aus Impuls-Workshops", "Praxisbeispi
                          "GP Impuls-Workshop":"Impuls-Workshops ganz nah an der Praxis", "GP Innovationsfonds":"Innovationsfonds mit greifbarem Ergebnis"}, stufen:{"Überfachlich":"Schultyp übergreifend"},
                fach:{"Überfachlich":"für alle Fächer"}};   /* 14.10.2026: Fachliste */
 const anzeige = (feld, w) => (ANZEIGE[feld] && ANZEIGE[feld][w]) || w;
+/* 7.11.2026: Art-Namen auf Karten und in Gruppenköpfen, wo sie vom Datenwert abweichen (wie im Filter) */
+const ART_KARTE = {"Praxisbeispiele KI":"Praxisbeispiele «Denken mit KI»"};
+const artName = w => ART_KARTE[w] || w;
 const STUFEN = ["Gymnasium","Berufsbildung"];   /* «Schultyp übergreifend» entfällt (14.10.2026) */
 const AUFWAENDE = ["Unterrichtsvorlage","Unterrichtsmaterial","Unterrichtsimpuls"];
 
@@ -1261,7 +1264,7 @@ function karte(a, mitId=true){
   (a.anliegen || []).forEach(i => {
     if (ANL[i]) meta.push(tag("anliegen", ANL_KURZ[i] || ANL[i], "Anliegen: "+ANL[i]));
   });
-  if (a.format) meta.push(tag("format", a.format, "Art des Angebots: "+a.format));
+  if (a.format) meta.push(tag("format", artName(a.format), "Art des Angebots: "+artName(a.format)));
   if (a.datum) meta.push(tag("datum", a.datum, "Datum: "+a.datum));
   if (a.aufwand) meta.push(tag("aufwand", a.aufwand, "Nutzungsart: "+a.aufwand));
   if (a.archiv) meta.push('<span class="merkmal">Archiv</span>');
@@ -1331,7 +1334,7 @@ function zeichneGruppen(t, liste){
     kopf.className = "gruppen-kopf";
     const titel = document.createElement("h3");
     titel.id = kopfId;
-    titel.textContent = name.replace(/^…\s*/,"");
+    titel.textContent = Z.sortierung === "format" ? artName(name) : name.replace(/^…\s*/,"");
     const zahl = document.createElement("span");
     zahl.className = "gruppen-anzahl";
     zahl.textContent = angebote.length + (angebote.length===1 ? " Angebot" : " Angebote");
@@ -1416,7 +1419,7 @@ function baueKontext(){
   const teile = [];
   if (Z.fach) teile.push(Z.fach);
   if (Z.anliegen !== null) teile.push(ANL[Z.anliegen].replace(/^…\s*/,""));
-  Z.formate.forEach(g => teile.push(g));
+  Z.formate.forEach(g => teile.push(anzeige("format", g)));   /* 7.11.2026: Anzeigename wie im Filter */
   if (Z.suche) teile.push('„'+Z.suche+'“');
 
   /* Keine Fragevorschläge mehr.
