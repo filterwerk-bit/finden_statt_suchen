@@ -1248,7 +1248,7 @@ const VIDEOS = {"0":["https://www.youtube.com/watch?v=csuggQiTZXY"],"4":["https:
 function videoZeile(a){
   const v = VIDEOS[a.id] || [];
   if (!v.length) return "";
-  return '<p class="videos">'+v.map((u, i) => '<a href="'+esc(u)+'" target="_blank" rel="noopener">Video'+(v.length > 1 ? ' '+(i+1) : '')+'</a>').join(" · ")+'</p>';
+  return '<p class="videos">'+v.map((u, i) => '<a href="'+esc(u)+'" data-i="'+a._i+'" data-v="'+i+'" target="_blank" rel="noopener">Video'+(v.length > 1 ? ' '+(i+1) : '')+'</a>').join(" · ")+'</p>';
 }
 function downloadZeile(a){
   const dls = a.downloads || [];
@@ -2103,6 +2103,9 @@ function ansichtUrl(u){
   /* YouTube lässt sich nur als embed im Ansichtsfenster zeigen (24.10.2026); Startzeit t= bleibt erhalten */
   const y = (u||"").match(/^https:\/\/(?:www\.)?youtube\.com\/watch\?v=([\w-]{11})(?:.*[?&]t=(\d+))?/);
   if (y) return "https://www.youtube-nocookie.com/embed/" + y[1] + (y[2] ? "?start=" + y[2] : "");
+  /* 12.11.2026: Vimeo (vimeo.com/ID/HASH) als Player; mp4-Dateien zeigt der Rahmen direkt */
+  const v = (u||"").match(/^https:\/\/vimeo\.com\/(\d+)(?:\/([0-9a-f]+))?/);
+  if (v) return "https://player.vimeo.com/video/" + v[1] + (v[2] ? "?h=" + v[2] : "");
   const m = (u||"").match(/^https:\/\/open\.spotify\.com\/(episode|show|track)\/([A-Za-z0-9]+)/);
   return m ? "https://open.spotify.com/embed/" + m[1] + "/" + m[2] : u;
 }
@@ -2167,6 +2170,13 @@ $("#liste").addEventListener("click", e => {
   const a = ANG.find(x => String(x._i) === l.dataset.i);
   if (!a) return;
   e.preventDefault();
+  /* 12.11.2026: Videolink der Karte öffnet das Video im Ansichtsfenster (wie der Titel) */
+  if (l.dataset.v != null){
+    const vs = VIDEOS[a.id] || [], i = +l.dataset.v;
+    if (!vs[i]) return;
+    ansichtAuf({titel: a.titel + " – Video" + (vs.length > 1 ? " " + (i+1) : ""), url: vs[i]}, l.closest(".karte"));
+    return;
+  }
   ansichtAuf(a, l.closest(".karte"));
 });
 $("#ansichtZu").addEventListener("click", ansichtZu);
