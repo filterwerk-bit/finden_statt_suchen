@@ -259,6 +259,7 @@
   .karte h3{margin:0; font-size:16.5px; font-weight:700; line-height:1.35; flex:1; min-width:0; overflow-wrap:anywhere}
   .karte h3 a{color:var(--orange); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px}
   .karte h3 a:hover{color:#b44700}
+  .karte h3 .ea-art{font-weight:400; font-size:14px; color:var(--muted)}
   .karte p{margin:6px 0 0; font-size:14px; color:var(--muted); line-height:1.55}
   [data-kategorie="fach"]{--kat-fg:#71368a}
   [data-kategorie="anliegen"]{--kat-fg:#b44700}
@@ -1022,11 +1023,12 @@ const FORMAT_DEFINITIONEN = {
 };
 /* Anzeigenamen in den Filtern (13.10.2026): Daten bleiben gleich, nur die Beschriftung im Feld ändert */
 const ANZEIGE = {format:{"Essenz":"Essenzen aus Impuls-Workshops", "Praxisbeispiele KI":"Praxisbeispiele «Denken mit KI»",
+                         "Tipp des Monats":"Video – Tipp des Monats",   /* 12.11.2026 */
                          "GP Impuls-Workshop":"Impuls-Workshops ganz nah an der Praxis", "GP Innovationsfonds":"Innovationsfonds mit greifbarem Ergebnis"}, stufen:{"Überfachlich":"Schultyp übergreifend"},
                fach:{"Überfachlich":"für alle Fächer"}};   /* 14.10.2026: Fachliste */
 const anzeige = (feld, w) => (ANZEIGE[feld] && ANZEIGE[feld][w]) || w;
 /* 7.11.2026: Art-Namen auf Karten und in Gruppenköpfen, wo sie vom Datenwert abweichen (wie im Filter) */
-const ART_KARTE = {"Praxisbeispiele KI":"Praxisbeispiele «Denken mit KI»"};
+const ART_KARTE = {"Praxisbeispiele KI":"Praxisbeispiele «Denken mit KI»", "Tipp des Monats":"Video – Tipp des Monats"};   /* 12.11.2026: Video – Tipp des Monats (Wunsch André) */
 const artName = w => ART_KARTE[w] || w;
 const STUFEN = ["Gymnasium","Berufsbildung"];   /* «Schultyp übergreifend» entfällt (14.10.2026) */
 const AUFWAENDE = ["Unterrichtsvorlage","Unterrichtsmaterial","Unterrichtsimpuls"];
@@ -1252,6 +1254,12 @@ function downloadZeile(a){
   return h;
 }
 
+/* 12.11.2026: eAssessment-Methoden mit «(formativ)» / «(summativ)» hinter dem Titel, in normalem
+   Fliesstext (kein Schild). Quelle: Feld s der Accordion-Kopie (formative bzw. summative Seite auf dlh.zh.ch). */
+function eaZusatz(a){
+  const k = accInhalt(a);
+  return k ? ' <span class="ea-art">('+(k.s ? "summativ" : "formativ")+')</span>' : "";
+}
 function karte(a, mitId=true){
   const d = document.createElement("article");
   d.className = "karte";
@@ -1270,7 +1278,7 @@ function karte(a, mitId=true){
   if (a.archiv) meta.push('<span class="merkmal">Archiv</span>');
   d.innerHTML =
     '<div class="karte-kopf">'+
-      '<h3><a data-kategorie="titel" data-i="'+a._i+'" href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.titel)+'</a>'+
+      '<h3><a data-kategorie="titel" data-i="'+a._i+'" href="'+esc(a.url)+'" target="_blank" rel="noopener">'+esc(a.titel)+'</a>'+eaZusatz(a)+
         '<button class="botfrage" type="button" data-frage="'+esc(a.titel)+'">Bot dazu fragen</button></h3>'+
     '</div>'+
     '<p>'+esc(a.lead)+
@@ -2495,7 +2503,7 @@ baueEinstieg();
    sort = fach | art | anliegen | nutzungsart | datum | titel
    Unbekannte Werte werden still übergangen. Ohne gültige Angabe startet die Seite wie immer. */
 const LINK_ART_KURZ = {"eassessment":"eAssessment-Methoden", "praxis-ki":"Praxisbeispiele KI",
-  "denken-mit-ki":"Praxisbeispiele KI", "gp":"Good Practice"};
+  "denken-mit-ki":"Praxisbeispiele KI", "gp":"Good Practice", "video":"Tipp des Monats"};
 const LINK_SORT = {fach:"fach", art:"format", format:"format", anliegen:"anliegen", nutzungsart:"aufwand", datum:"datum", titel:"titel"};
 function linkSlug(t){
   return String(t).toLowerCase().replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
