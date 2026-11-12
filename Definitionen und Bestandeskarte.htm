@@ -457,7 +457,7 @@ footer.site{border-top:2px solid var(--ink)}
               </tr>
               <tr>
                 <td class="name">Innovationsfonds­projekt</td>
-                <td class="small">Ein von einer Jury beurteiltes und finanziertes Entwicklungsprojekt, oft mit fertigem Produkt</td>
+                <td class="small">Ein von einer Jury beurteiltes und finanziertes Entwicklungsprojekt, oft mit fertigem Produkt; 22 mit Projektvideo</td>
                 <td class="small">Schulteams, gefördert</td>
                 <td class="small"><span class="dot hi"></span>Projekt abgeschlossen</td>
                 <td class="small">gering bis hoch<br><span style="color:var(--flame)">Marker «Easy to use»</span></td>
@@ -475,7 +475,7 @@ footer.site{border-top:2px solid var(--ink)}
               </tr>
               <tr>
                 <td class="name">Impuls‑Workshop</td>
-                <td class="small">Einstündiger Online‑Austausch zu einem Thema, im Archiv nach sieben Themen sortiert</td>
+                <td class="small">Einstündiger Online‑Austausch zu einem Thema, im Archiv nach sieben Themen sortiert; 71 von 89 mit Aufzeichnung als Video</td>
                 <td class="small">Lehrpersonen, DLH</td>
                 <td class="small"><span class="dot"></span>Erfahrungsbericht</td>
                 <td class="small">Zuschauen</td>
@@ -546,7 +546,7 @@ footer.site{border-top:2px solid var(--ink)}
                 <td class="small"><a href="https://dlh.zh.ch/home/kuratiertes">Kuratiertes</a> · <a href="https://dlh.zh.ch/home/wb-kompass/kompetenzmodelle">Kompetenzmodelle</a></td>
               </tr>
 <tr>
-  <td class="name">Tipp des Monats</td>
+  <td class="name">Video – Tipp des Monats</td>
   <td class="small">Ein Kurzvideo des DLH mit einem Tipp für den Unterrichtsalltag, erscheint monatlich (früher «DLH-Inspiration»)</td>
   <td class="small">DLH (Benaja Schellenberg)</td>
   <td class="small"><span class="dot"></span>Anleitung</td>
@@ -584,7 +584,7 @@ footer.site{border-top:2px solid var(--ink)}
             </tbody>
           </table>
             </div>
-            <p class="foot">Die Tabelle nennt fünfzehn Angebotsarten und dazu «Good Practice», das keine eigene Angebotsart ist, sondern eine Auswahl aus vier davon – in der Übersicht «Suchen, Filter, Ergebnisse» steht es darum als zusätzlicher Knopf unter «Angebotsart». Zehn davon sind in der Liste unten einzeln aufgeführt: Praxisbeispiele KI, eAssessment-Methoden, Impuls-Workshops, Essenzen, Podcast, Innovationsfonds, Kuratiertes, Tipp des Monats, Digi Talk und Weiterbildung. Prompting, die KI-Tools mit Schullizenz, die Handreichungen und die CoPs liegen auf dlh.zh.ch als eigene Seiten – Sie erreichen sie über die Links in der Spalte «Wo».</p>
+            <p class="foot">Die Tabelle nennt fünfzehn Angebotsarten und dazu «Good Practice», das keine eigene Angebotsart ist, sondern eine Auswahl aus vier davon – in der Übersicht «Suchen, Filter, Ergebnisse» steht es darum als zusätzlicher Knopf unter «Angebotsart». Zehn davon sind in der Liste unten einzeln aufgeführt: Praxisbeispiele KI, eAssessment-Methoden, Impuls-Workshops, Essenzen, Podcast, Innovationsfonds, Kuratiertes, Video – Tipp des Monats, Digi Talk und Weiterbildung. Prompting, die KI-Tools mit Schullizenz, die Handreichungen und die CoPs liegen auf dlh.zh.ch als eigene Seiten – Sie erreichen sie über die Links in der Spalte «Wo».<br>Videos: Die Art «Video – Tipp des Monats» (bis 12.11.2026 «Tipp des Monats») umfasst die 52 Kurzvideos. Dazu zeigt die Übersicht «Suchen, Filter, Ergebnisse» seit 12.11.2026 auf 96 Karten einen Link «Video» zu einem Video auf der verlinkten Seite: 71 Impuls‑Workshops, 22 Innovationsfondsprojekte, 1 Kuratiertes, 2 eAssessment‑Methoden. Die Videos sind keine eigenen Angebote und zählen nicht zum Bestand.</p>
           </div>
         </details>
 
@@ -753,7 +753,7 @@ function leadCol(row){
 }
 /* Lange Formatnamen im gedrehten Spaltenkopf auf mehrere Zeilen brechen.
    Ohne das zieht «Kantonal freigegebene KI-Tools im Aufbau» die ganze Kopfzeile in die Höhe. */
-var GEF_UMBRUCH = {"Kantonal freigegebene KI-Tools":"Kantonal<br>freigegebene<br>KI-Tools", "Essenz":"Essenzen aus<br>Impuls-<br>Workshops", "Tipp des Monats":"Tipp des<br>Monats", "Weiterbildung":"Weiter&shy;bildung"};
+var GEF_UMBRUCH = {"Kantonal freigegebene KI-Tools":"Kantonal<br>freigegebene<br>KI-Tools", "Essenz":"Essenzen aus<br>Impuls-<br>Workshops", "Tipp des Monats":"Video –<br>Tipp des<br>Monats", "Weiterbildung":"Weiter&shy;bildung"};
 function kopf(g){ return GEF_UMBRUCH[g] || esc(g); }
 function matrix(kind){
   var MX = A.filter(function(a){return !a.archiv;});
@@ -840,7 +840,7 @@ var KARTE = [
   loc:"eAssessments \u203a digitale summative Assessments", g:"eAssessment-Methoden", q:"eAssessment-Methode, summativ"},
  {n:function(){return zGef("Kuratiertes")}, lbl:"Kuratiertes: Studien, Stecknadeln, Kompetenzmodelle",
   loc:"Kuratiertes \u00b7 WB-Kompass \u203a Kompetenzmodelle", g:"Kuratiertes"},
- {n:function(){return zGef("Tipp des Monats")}, lbl:"Tipp des Monats: Kurzvideos",
+ {n:function(){return zGef("Tipp des Monats")}, lbl:"Video – Tipp des Monats: Kurzvideos",
   loc:"WB-Kompass \u203a Basics \u203a Tipp des Monats", g:"Tipp des Monats"},
  {n:function(){return zGef("Digi Talk")}, lbl:"Digi Talk: Blog f\u00fcr den Sprachunterricht",
   loc:"WB-Kompass \u203a Basics \u203a Digi Talk", g:"Digi Talk"},
